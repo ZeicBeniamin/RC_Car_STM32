@@ -9,7 +9,6 @@ Drivers/
 # Project files
 *.cfg
 *.launch
-*.ioc
 *.ld
 
 

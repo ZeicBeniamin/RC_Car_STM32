@@ -33,7 +33,6 @@ typedef enum
   STM_SENDING_UPDATE,
   STM_WAITING_MESSAGE,
   STM_SENDING_COMMAND,
-  STM_REESTABLISHING_CONNECTION,
   STM_CAR_BLOCKED,
   STM_WAITING_MESSAGE_BLOCK
 } STM32_StateTypeDef;
@@ -224,9 +223,6 @@ int main(void)
             huart2.RxState != HAL_UART_STATE_BUSY_RX) {
           HAL_UART_Receive_IT(&huart2, rx_buffer, 8);
         }
-      }
-      else if (gState == STM_REESTABLISHING_CONNECTION) {
-
       }
     }
 
