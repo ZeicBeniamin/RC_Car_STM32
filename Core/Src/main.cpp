@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include "UartHelper.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,7 +62,7 @@ typedef enum
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint8_t rx_buffer[10];
+uint8_t rx_buff[10];
 uint8_t tx_buffer[8];
 uint8_t led_state;
 
@@ -82,6 +83,11 @@ uint32_t time_diff;
 // Holds timeout value;
 uint32_t timeout;
 
+// Pointer to the rx buffer from the UartHelper class
+uint8_t *rx_b;
+
+UartHelper uart_helper;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,9 +96,19 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void init();
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  // Deposit the received data in the uart object
+  uart_helper.receive(rx_buff);
+  // Return the received message
+  rx_b = uart_helper.read();
+  HAL_UART_Transmit_IT(&huart2, rx_b, 8);
+}
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+  // Reactivate the reception process
+  HAL_UART_Receive_IT(&huart2, rx_buff, 8);
+}
 
 /* USER CODE END PFP */
 
@@ -135,16 +151,24 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_UART_Receive_IT(&huart2, rx_buff, 8);
+
   while (1)
   {
 
+    // Check the received buffer from uart_helper
+
+    // Send the received message back, through uart_helper
+
+
+/*
     rxstate = huart2.RxState;
 
     // Main state machine
 
-    /* Connection not established */
+    // Connection not established
     if (connState == CONN_NOT_ESTABLISHED) {
-      /* Waiting connection message */
+      // Waiting connection message /
       if (gState == STM_WAITING_MESSAGE) {
         gstate = huart2.gState;
         // Make the uart listen for messages from the RPI, if it's not busy
@@ -156,7 +180,7 @@ int main(void)
           HAL_UART_Receive_IT(&huart2, rx_buffer, 8);
         }
       }
-      /* Received connection message, sending a response */
+      // Received connection message, sending a response
       if (gState == STM_SENDING_UPDATE) {
         // Send the response marking the fact that the connection was established
         strcpy(tx_buffer, (uint8_t *) "CON_EST\n");
@@ -168,14 +192,14 @@ int main(void)
         gState = STM_INITIALIZING_TIMER;
     }
     }
-    /* Connection established */
+    // Connection established //
     else { // if(connState == CONN_ESTABLISHED)
-      /* Initialising timer */
+      // Initialising timer //
       if (gState == STM_INITIALIZING_TIMER) {
         init_time = HAL_GetTick();
         gState = STM_SENDING_UPDATE;
       }
-      /* Sending update over to RPI */
+      // Sending update over to RPI //
       else if (gState == STM_SENDING_UPDATE) {
         // Timeout in milliseconds
         timeout = 5000;
@@ -188,7 +212,7 @@ int main(void)
 
         timeout = 5000;
       }
-      /* Waiting for message from RPI */
+      // Waiting for message from RPI //
       else if (gState == STM_WAITING_MESSAGE) {
         // TODO: Handle RPI disconnection
         // If the timeout has not passed, start listening for a message from the RPI
@@ -200,7 +224,7 @@ int main(void)
             HAL_UART_Receive_IT(&huart2, rx_buffer, 8);
           }
         }
-        /* Block the car */
+        // Block the car //
         else {
           gState = STM_CAR_BLOCKED;
         }
@@ -227,7 +251,7 @@ int main(void)
     }
 
     hstate = (huart2.gState | huart2.RxState);
-
+*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -337,11 +361,12 @@ static void MX_GPIO_Init(void)
   * @param huart: pointer to the handler of the UART interface
   * @retval None
   */
+/* ------------------------------------ COMM OUT
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
   // Perform actions corresponding to the current state of the connection
   switch(connState) {
-  /* Connection not established */
+  // Connection not established //
   case CONN_NOT_ESTABLISHED:
       // Message received while establishing connection.
       // Decode the message
@@ -363,7 +388,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
       //HAL_UART_Transmit_IT(&huart2, (uint8_t *) "CONN_EST", 8);
       break;
 
-  /* Connection already established */
+  // Connection already established //
   case CONN_ESTABLISHED:
     if (gState == STM_WAITING_MESSAGE) {
       // TODO: Remove test code
@@ -415,12 +440,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 //  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, led_state);
 
 }
-
+------------------------------------ COMM OUT */
 /**
   * @brief This function is executed upon UART tx completion
   * @param huart: pointer to the handler of the UART interface
   * @retval None
   */
+/* ------------------------------------ COMM OUT
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
     // Perform actions corresponding to the current state of the connection
     switch(connState) {
@@ -440,7 +466,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
       break;
     }
 }
-
+-------------------------------------- COMM OUT*/
 /**
   * @brief Initialize the state of the components of STM32
   * @param None
@@ -448,7 +474,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   */
 void init(void) {
   led_state = 0;
-  strcpy(tx_buffer, (uint8_t *)"123456\n");
+  strcpy((char*)tx_buffer, "123456\n");
   // TODO: Initialize motors and servos to desired positions
   connState = CONN_NOT_ESTABLISHED;
   gState = STM_WAITING_MESSAGE;
@@ -526,11 +552,13 @@ void wait_message_blocked(void) {
   * @param huart: pointer to the handler of the UART interface
   * @retval None
   */
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+/* -------------------------------------- COMM OUT
+ * void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
   // If an error occurs during information transmission, reset the transmission
   // by setting UART to one of the reading or writing states
   HAL_UART_Transmit_IT(&huart2, rx_buffer, 4);
 }
+-------------------------------------- COMM OUT */
 /* USER CODE END 4 */
 
 /**
