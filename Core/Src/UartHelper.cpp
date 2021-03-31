@@ -7,7 +7,11 @@
 
 #include "UartHelper.h"
 
-// Constructor - initialize the buffers
+/**
+  * @brief  Initialises state variables of the class
+  * @param  None
+  * @retval None
+  */
 UartHelper::UartHelper() {
   // Assign the first buffer as the storage reading buffer
   rx_state = RX_BUFFER_READY;
@@ -15,15 +19,17 @@ UartHelper::UartHelper() {
   swap_flag = BUFFER_READY;
 }
 
-// Destructor
-UartHelper::~UartHelper() {
-  // TODO Auto-generated destructor stub
-}
-
-
-// Receive data from the UART callback
+/**
+  * @brief  Receives data from UART and writes it into one buffer.
+  * @note   Writes data in the active buffer, that is the buffer which has its
+  *         address stored in the rx_buffer pointer.
+  *         Data is written only if a swap was not already requested.
+  *         Requests a buffer swap after each reception process.
+  *
+  * @param  rx Pointer to the array received through UART.
+  * @retval None
+  */
 void UartHelper::receive(uint8_t rx[]) {
-//  cout << "UartHelper::receive() >> \n";
   // Use a double-buffer system, so that one buffer is always available
   // for receiving UART data and the other one is always available for
   // returning the stored data.
@@ -60,7 +66,20 @@ void UartHelper::receive(uint8_t rx[]) {
   }
 }
 
-// Reads data stored in this class, previously transferred by UART.
+/**
+  * @brief  Returns reception data stored in the inactive buffer.
+  * @note   A check is initially performed, to see which of the tow buffers is
+  *         the inactive one. That buffer is copied to a temporary buffer and
+  *         returned to the caller function.
+  *         An additional check is performed, to see if buffer swap was
+  *         requested. Buffer swap requests are made from UartHelper::receive()
+  *         upon data reception completion. It is guaranteed that no other
+  *         reception event is allowed to trigger a writing into the active
+  *         buffer until the swap request is fulfilled.
+  *
+  * @param  None
+  * @retval None
+  */
 uint8_t* UartHelper::read() {
 //  cout << "UartHelper::read() >> \n";
   // Copy data from the available register - the one which is not currently used
@@ -91,29 +110,13 @@ uint8_t* UartHelper::read() {
   return temp_read_buffer;
 }
 
-//void UartHelper::ReceiveCb(UART_HandleTypeDef *huart) {
-//  //TODO: Delete tests
-//  // Testing purposes only - this code re-routes the received data to UART Tx, to check correctness
-//  // Store the received data in the double-buffer system in this class
-//  receive(rx);
-//  // Read the currently stored data into another buffer
-//  rx_b = read();
-//  // Send the received data
-//  HAL_UART_Transmit_IT(huart, rx_b, 8);
-//}
-
-void UartHelper::setHandlerBeginReception(UART_HandleTypeDef* huart) {
+/**
+  * @brief Set the UART handler object to use for transmission
+  * @param huart: pointer to the handler of the UART interface
+  * @retval None
+  */
+void UartHelper::setHandler(UART_HandleTypeDef* huart) {
   this -> huart = huart;
-
-  // Register the ReceiveCb method from this class as the callback function
-  // for the UART RX Complete
-  //HAL_UART_RegisterCallback(this->huart, HAL_UART_RX_COMPLETE_CB_ID, static_cast <UartHelper*>(UartHelper::ReceiveCb));
-
-  // TODO: REMOVE TEST
-  // Test UART reception called from this class
-
-
-  HAL_UART_Receive_IT(huart, rx, 8);
 }
 
 void UartHelper::transmit(uint8_t *tx) {

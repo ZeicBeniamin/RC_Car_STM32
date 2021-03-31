@@ -25,13 +25,10 @@ typedef enum {
 class UartHelper {
 public:
   UartHelper();
-  virtual ~UartHelper();
   void receive(uint8_t *rx);
   void transmit(uint8_t *tx);
   uint8_t* read();
-  void write();
-  void setHandlerBeginReception(UART_HandleTypeDef*);
-//  void ReceiveCb(UART_HandleTypeDef*);
+  void setHandler(UART_HandleTypeDef*);
 
 private:
   // Write locations for the RXCpltCallback method - will be used alternatively
@@ -44,9 +41,7 @@ private:
   uint8_t temp_read_buffer[10];
   uint8_t temp_write_buffer[10];
 
-  // Pointers to the active buffers
-  uint8_t *tx_buffer;
-  // Holds the in use rx buffer
+  // Holds the in-use address of the rx buffer
   uint8_t *rx_buffer;
 
   // Holds the buffer swap requests

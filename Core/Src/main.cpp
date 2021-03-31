@@ -110,16 +110,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   uart_helper.receive(main_rx_buff);
   // Normally, after a message is received, UART should be put in reception
   // mode again:
-//  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
-  // TODO: Remove test code
-  // Return the received message
-  rx_b = uart_helper.read();
-  uart_helper.transmit(rx_b);
+  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-  // Reactivate the reception process
-  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
+  // Do nothing
 }
 
 /* USER CODE END PFP */
@@ -159,12 +154,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  uart_helper.setHandlerBeginReception(&huart2);
+  uart_helper.setHandler(&huart2);
+  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
   /* USER CODE END 2 */
-  //HAL_UART_RegisterCallback(&huart2, HAL_UART_RX_COMPLETE_CB_ID, HAL_UART_RxmCpltCallback);
   /* Infinite loop */
+
   /* USER CODE BEGIN WHILE */
-//  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
 
   while (1)
   {
@@ -487,7 +482,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   */
 void init(void) {
   led_state = 0;
-  strcpy((char*)tx_buffer, "123456\n");
   // TODO: Initialize motors and servos to desired positions
   connState = CONN_NOT_ESTABLISHED;
   gState = STM_WAITING_MESSAGE;
