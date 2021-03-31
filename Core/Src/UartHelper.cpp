@@ -38,7 +38,7 @@ void UartHelper::receive(uint8_t rx[]) {
       // swap the two buffers. Making the currently used buffer inactive, we
       // give the chance for the received data to be read from that buffer without
       // interfering with data reception from UART.
-      if (rx_state == BUFFER_READY) {
+      if (rx_state == RX_BUFFER_READY) {
         rx_buffer = rx_buffer2;
       }
       // Otherwise, raise a flag so that the buffer is changed when reading
@@ -50,7 +50,7 @@ void UartHelper::receive(uint8_t rx[]) {
     // The same code as above, but for rx_buffer2 as the active buffer
     else if(rx_buffer == rx_buffer2) {
       strcpy((char*) rx_buffer2, (const char*) rx);
-      if (rx_state == BUFFER_READY) {
+      if (rx_state == RX_BUFFER_READY) {
         rx_buffer = rx_buffer1;
       }
       else {
@@ -91,24 +91,34 @@ uint8_t* UartHelper::read() {
   return temp_read_buffer;
 }
 
-void UartHelper::setHandler(UART_HandleTypeDef* huart) {
+//void UartHelper::ReceiveCb(UART_HandleTypeDef *huart) {
+//  //TODO: Delete tests
+//  // Testing purposes only - this code re-routes the received data to UART Tx, to check correctness
+//  // Store the received data in the double-buffer system in this class
+//  receive(rx);
+//  // Read the currently stored data into another buffer
+//  rx_b = read();
+//  // Send the received data
+//  HAL_UART_Transmit_IT(huart, rx_b, 8);
+//}
+
+void UartHelper::setHandlerBeginReception(UART_HandleTypeDef* huart) {
   this -> huart = huart;
+
+  // Register the ReceiveCb method from this class as the callback function
+  // for the UART RX Complete
+  //HAL_UART_RegisterCallback(this->huart, HAL_UART_RX_COMPLETE_CB_ID, static_cast <UartHelper*>(UartHelper::ReceiveCb));
 
   // TODO: REMOVE TEST
   // Test UART reception called from this class
+
+
   HAL_UART_Receive_IT(huart, rx, 8);
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  // Deposit the received data in the uart object
-  uart_helper.receive(main_rx_buff);
-  // Return the received message
-  rx_b = uart_helper.read();
-  HAL_UART_Transmit_IT(&huart2, rx_b, 8);
-}
+void UartHelper::transmit(uint8_t *tx) {
+  // Activate the transmission line and send the data stored in tx[]
+  HAL_UART_Transmit_IT(huart, tx, 8);
+};
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-  // Reactivate the reception process
-  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
-}
 

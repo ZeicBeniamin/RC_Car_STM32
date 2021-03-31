@@ -51,6 +51,13 @@ typedef enum
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+// Lets you register UART callback functions with custom name
+// If macro is not changed in stm32f4xx_hal_conf_template.h, the change made here
+// has no effect. The redefinition from main.cpp was only added as a reminder
+// for the programmer that the macro is redefined elsewhere.
+// If the original macro is defined to a different value, the line below (which
+// redefines it) will generate a warning in the compile phase.
+//#define USE_HAL_UART_REGISTER_CALLBACKS 1U;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -101,10 +108,15 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Deposit the received data in the uart object
   uart_helper.receive(main_rx_buff);
+  // Normally, after a message is received, UART should be put in reception
+  // mode again:
+//  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
+  // TODO: Remove test code
   // Return the received message
   rx_b = uart_helper.read();
-  HAL_UART_Transmit_IT(&huart2, rx_b, 8);
+  uart_helper.transmit(rx_b);
 }
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   // Reactivate the reception process
   HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
@@ -147,12 +159,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  uart_helper.setHandler(&huart2);
+  uart_helper.setHandlerBeginReception(&huart2);
   /* USER CODE END 2 */
-
+  //HAL_UART_RegisterCallback(&huart2, HAL_UART_RX_COMPLETE_CB_ID, HAL_UART_RxmCpltCallback);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//  HAL_UART_Receive_IT(&huart2, rx_buff, 8);
+//  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
 
   while (1)
   {

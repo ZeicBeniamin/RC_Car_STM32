@@ -26,11 +26,12 @@ class UartHelper {
 public:
   UartHelper();
   virtual ~UartHelper();
-  void receive(uint8_t rx[]);
-  void transmit();
+  void receive(uint8_t *rx);
+  void transmit(uint8_t *tx);
   uint8_t* read();
   void write();
-  void setHandler(UART_HandleTypeDef*);
+  void setHandlerBeginReception(UART_HandleTypeDef*);
+//  void ReceiveCb(UART_HandleTypeDef*);
 
 private:
   // Write locations for the RXCpltCallback method - will be used alternatively
@@ -56,7 +57,7 @@ private:
 
   // TODO: Remove tests
   uint8_t rx[10];
-  uint8_t rx_b[10];
+  uint8_t *rx_b;
 };
 
 #endif /* SRC_UARTHELPER_H_ */
