@@ -62,7 +62,7 @@ typedef enum
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint8_t rx_buff[10];
+uint8_t main_rx_buff[10];
 uint8_t tx_buffer[8];
 uint8_t led_state;
 
@@ -100,14 +100,14 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Deposit the received data in the uart object
-  uart_helper.receive(rx_buff);
+  uart_helper.receive(main_rx_buff);
   // Return the received message
   rx_b = uart_helper.read();
   HAL_UART_Transmit_IT(&huart2, rx_b, 8);
 }
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   // Reactivate the reception process
-  HAL_UART_Receive_IT(&huart2, rx_buff, 8);
+  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
 }
 
 /* USER CODE END PFP */
@@ -147,11 +147,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  uart_helper.setHandler(&huart2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_UART_Receive_IT(&huart2, rx_buff, 8);
+//  HAL_UART_Receive_IT(&huart2, rx_buff, 8);
 
   while (1)
   {
