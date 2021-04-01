@@ -14,7 +14,7 @@
 
 typedef enum {
   BUFFER_REQUEST_SWAP,
-  BUFFER_READY
+  BUFFER_SWAP_COMPLETE
 } UART_Rx_Buffer_Flag;
 
 typedef enum {

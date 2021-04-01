@@ -16,7 +16,7 @@ UartHelper::UartHelper() {
   // Assign the first buffer as the storage reading buffer
   rx_state = RX_BUFFER_READY;
   rx_buffer = rx_buffer1;
-  swap_flag = BUFFER_READY;
+  swap_flag = BUFFER_SWAP_COMPLETE;
 }
 
 /**
@@ -35,7 +35,7 @@ void UartHelper::receive(uint8_t rx[]) {
   // returning the stored data.
 
   // Only proceed with writing if the buffers have been swapped
-  if (swap_flag == BUFFER_READY) {
+  if (swap_flag == BUFFER_SWAP_COMPLETE) {
     // Write UART data to the active (in-use) buffer
     if(rx_buffer == rx_buffer1) {
       // Copy received data to the active buffer
@@ -44,7 +44,7 @@ void UartHelper::receive(uint8_t rx[]) {
       // swap the two buffers. Making the currently used buffer inactive, we
       // give the chance for the received data to be read from that buffer without
       // interfering with data reception from UART.
-      if (rx_state == RX_BUFFER_READY) {
+      if (rx_state == RX_BUFFER_READY) { // if(rx_state != RX_BUFFER_BUSY_READING)
         rx_buffer = rx_buffer2;
       }
       // Otherwise, raise a flag so that the buffer is changed when reading
@@ -94,19 +94,19 @@ uint8_t* UartHelper::read() {
   } else {
     strcpy((char*) temp_read_buffer, (char*) rx_buffer1);
   }
+  // Flag the termination of the reading operation.
+  rx_state = RX_BUFFER_READY;
 
   // If a buffer swap was attempted during reading, execute that operation now.
   if (swap_flag == BUFFER_REQUEST_SWAP) {
     if (rx_buffer == rx_buffer1) {
       rx_buffer = rx_buffer2;
-      swap_flag = BUFFER_READY;
+      swap_flag = BUFFER_SWAP_COMPLETE;
     } else {
       rx_buffer = rx_buffer1;
-      swap_flag = BUFFER_READY;
+      swap_flag = BUFFER_SWAP_COMPLETE;
     }
   }
-  // Flag the termination of the reading operation.
-  rx_state = RX_BUFFER_READY;
   return temp_read_buffer;
 }
 

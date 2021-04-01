@@ -72,6 +72,9 @@ UART_HandleTypeDef huart2;
 uint8_t main_rx_buff[10];
 uint8_t tx_buffer[8];
 uint8_t led_state;
+// TODO : REMove after tests
+uint8_t var[8];
+uint64_t variable;
 
 uint8_t tx_size = 8;
 uint8_t hstate;
@@ -111,6 +114,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Normally, after a message is received, UART should be put in reception
   // mode again:
   HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
+  led_state = !led_state;
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, (led_state == 0 ? GPIO_PIN_RESET : GPIO_PIN_SET));
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
@@ -163,6 +168,20 @@ int main(void)
 
   while (1)
   {
+//    var[7] = '0' + (variable%10);
+//    var[6] = '0' + (variable/10%10);
+//    var[5] = '0' + (variable/100%10);
+//    var[4] = '0' + (variable/1000%10);
+//    var[3] = '0' + (variable/10000%10);
+//    var[2] = '0' + (variable/100000%10);
+//    var[1] = '0' + (variable/1000000%10);
+//    var[0] = '0' + (variable/10000000%10);
+//
+//    variable++;
+
+//    strcpy((char*)var, (const char*)"11122233");
+//    HAL_UART_Transmit_IT(&huart2, var, 8);
+//    HAL_Delay(10);
 
     /* USER CODE END WHILE */
 
