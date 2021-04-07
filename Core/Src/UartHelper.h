@@ -28,7 +28,7 @@ public:
   void receive(uint8_t *rx);
   void transmit(uint8_t *tx);
   uint8_t* read();
-  void setHandler(UART_HandleTypeDef*);
+  void setHandler(UART_HandleTypeDef*, uint8_t*);
 
 private:
   // Write locations for the RXCpltCallback method - will be used alternatively
@@ -43,6 +43,7 @@ private:
 
   // Holds the in-use address of the rx buffer
   uint8_t *rx_buffer;
+  uint8_t *rx_buf_from_main;
 
   // Holds the buffer swap requests
   UART_Rx_Buffer_Flag swap_flag;

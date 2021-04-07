@@ -113,9 +113,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   uart_helper.receive(main_rx_buff);
   // Normally, after a message is received, UART should be put in reception
   // mode again:
-  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
-  led_state = !led_state;
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, (led_state == 0 ? GPIO_PIN_RESET : GPIO_PIN_SET));
+//  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
+//  led_state = !led_state;
+//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, (led_state == 0 ? GPIO_PIN_RESET : GPIO_PIN_SET));
+   HAL_UART_Transmit_IT(&huart2, uart_helper.read(), 8);
+
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
@@ -159,8 +161,17 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  uart_helper.setHandler(&huart2);
-  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
+  // Send the handler object together with the read buffer from main.
+  // This is required so that the buffer can be accessed both from UartHelper.cpp
+  // and main.cpp.
+  // main.cpp contains the callback that redirects the read data to UartHelper
+  // through this buffer. UartHelper uses this buffer as an argument for the
+  // HAL_UART_Receive_IT function, in order to be used as a storage buffer for
+  // the messages sent through uart.
+  uart_helper.setHandler(&huart2, main_rx_buff);
+  // No need to call HAL_UART_Receive_IT here, since it's called in the
+  // setHandler method, from class UartHelper.
+
   /* USER CODE END 2 */
   /* Infinite loop */
 

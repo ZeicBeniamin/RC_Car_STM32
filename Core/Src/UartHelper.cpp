@@ -64,6 +64,8 @@ void UartHelper::receive(uint8_t rx[]) {
       }
     }
   }
+
+  HAL_UART_Receive_IT(huart, rx_buf_from_main, 8);
 }
 
 /**
@@ -115,8 +117,10 @@ uint8_t* UartHelper::read() {
   * @param huart: pointer to the handler of the UART interface
   * @retval None
   */
-void UartHelper::setHandler(UART_HandleTypeDef* huart) {
+void UartHelper::setHandler(UART_HandleTypeDef* huart, uint8_t *rx_buf_from_main) {
   this -> huart = huart;
+  this -> rx_buf_from_main = rx_buf_from_main;
+  HAL_UART_Receive_IT(huart, rx_buf_from_main, 8);
 }
 
 void UartHelper::transmit(uint8_t *tx) {
