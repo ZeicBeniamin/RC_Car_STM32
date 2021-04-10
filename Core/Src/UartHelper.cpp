@@ -3,6 +3,12 @@
  *
  *  Created on: Mar 15, 2021
  *      Author: Beniamin Zeic
+ *
+ *  UartHelper acts as a storage container for the messages received through
+ *  uart. Although it also manages data transmission, its main purpose is to
+ *  store received data.
+ *  TODO: Make this class a singleton. There is no reason for which we would
+ *        create two helper objects for the same UART interface.
  */
 
 #include "UartHelper.h"
@@ -30,30 +36,30 @@ UartHelper::UartHelper() {
   * @retval None
   */
 void UartHelper::receive(uint8_t rx[]) {
-  // Use a double-buffer system, so that one buffer is always available
-  // for receiving UART data and the other one is always available for
-  // returning the stored data.
+  /* Use a double-buffer system, so that one buffer is always available
+     for receiving UART data and the other one is always available for
+     returning the stored data. */
 
-  // Only proceed with writing if the buffers have been swapped
+  /* Only proceed with writing if the buffers have been swapped */
   if (swap_flag == BUFFER_READY) {
-    // Write UART data to the active (in-use) buffer
+    /* Write UART data to the active (in-use) buffer */
     if(rx_buffer == rx_buffer1) {
-      // Copy received data to the active buffer
+      /* Copy received data to the active buffer */
       strcpy((char*) rx_buffer1, (const char*) rx);
-      // If no read operation is currently performed on the inactive buffer,
-      // swap the two buffers. Making the currently used buffer inactive, we
-      // give the chance for the received data to be read from that buffer without
-      // interfering with data reception from UART.
+      /* If no read operation is currently performed on the inactive buffer,
+         swap the two buffers. Making the currently used buffer inactive, we
+         give the chance for the received data to be read from that buffer without
+         interfering with data reception from UART. */
       if (rx_state == RX_BUFFER_READY) {
         rx_buffer = rx_buffer2;
       }
-      // Otherwise, raise a flag so that the buffer is changed when reading
-      // from the inactive flag is complete
+      /* Otherwise, raise a flag so that the buffer is changed when reading
+         from the inactive flag is complete */
       else {
         swap_flag = BUFFER_REQUEST_SWAP;
       }
     }
-    // The same code as above, but for rx_buffer2 as the active buffer
+    /* The same code as above, but for rx_buffer2 as the active buffer */
     else if(rx_buffer == rx_buffer2) {
       strcpy((char*) rx_buffer2, (const char*) rx);
       if (rx_state == RX_BUFFER_READY) {
@@ -64,6 +70,8 @@ void UartHelper::receive(uint8_t rx[]) {
       }
     }
   }
+
+  return;
 }
 
 /**
@@ -81,21 +89,27 @@ void UartHelper::receive(uint8_t rx[]) {
   * @retval None
   */
 uint8_t* UartHelper::read() {
-//  cout << "UartHelper::read() >> \n";
-  // Copy data from the available register - the one which is not currently used
-  // for writing rx data - to the read_buffer, which will be sent to the program
-  // via the method's return parameter.
+  uint8_t aux[10];
+  uint8_t i = 0;
+  uint8_t heading_pos = 0;
 
-  // Protect access to the buffer by flagging the reading operation with
-  // RX_BUFFER_BUSY_READING.
+  /* Copy data from the available register - the one which is not currently used
+     for writing rx data - to the read_buffer, which will be sent to the program
+     via the method's return parameter. */
+
+  /* Protect access to the buffer by flagging the reading operation with
+     RX_BUFFER_BUSY_READING. */
   rx_state = RX_BUFFER_BUSY_READING;
   if (rx_buffer == rx_buffer1) {
-    strcpy((char*) temp_read_buffer, (char*) rx_buffer2);
+    strcpy((char*) aux, (char*) rx_buffer2);
   } else {
-    strcpy((char*) temp_read_buffer, (char*) rx_buffer1);
+    strcpy((char*) aux, (char*) rx_buffer1);
   }
 
-  // If a buffer swap was attempted during reading, execute that operation now.
+  /* Flag the termination of the reading operation. */
+  rx_state = RX_BUFFER_READY;
+
+  /* If a buffer swap was attempted during reading, execute that operation now. */
   if (swap_flag == BUFFER_REQUEST_SWAP) {
     if (rx_buffer == rx_buffer1) {
       rx_buffer = rx_buffer2;
@@ -105,8 +119,24 @@ uint8_t* UartHelper::read() {
       swap_flag = BUFFER_READY;
     }
   }
-  // Flag the termination of the reading operation.
-  rx_state = RX_BUFFER_READY;
+
+  /* Process the received string, in case it suffered circular permutations */
+
+  /* UART works on 8 bytes */
+  while (i < 8) {
+      if ((char)(aux[i]) == '<') {
+          /* Store heading byte position */
+          heading_pos = i;
+          /* Exit loop */
+          i = 8;
+      }
+      ++i;
+  }
+
+  for (i = 0; i < 8; ++i) {
+      temp_read_buffer[i] = aux[(i + heading_pos) % 8];
+  }
+
   return temp_read_buffer;
 }
 
@@ -119,9 +149,12 @@ void UartHelper::setHandler(UART_HandleTypeDef* huart) {
   this -> huart = huart;
 }
 
+UART_HandleTypeDef* UartHelper::getHandler() {
+  return this -> huart;
+}
+
 void UartHelper::transmit(uint8_t *tx) {
-  // Activate the transmission line and send the data stored in tx[]
+  /* Activate the transmission line and send the data stored in tx[] */
   HAL_UART_Transmit_IT(huart, tx, 8);
 };
-
 

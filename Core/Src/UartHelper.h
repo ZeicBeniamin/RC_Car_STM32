@@ -29,6 +29,7 @@ public:
   void transmit(uint8_t *tx);
   uint8_t* read();
   void setHandler(UART_HandleTypeDef*);
+  UART_HandleTypeDef* getHandler();
 
 private:
   // Write locations for the RXCpltCallback method - will be used alternatively

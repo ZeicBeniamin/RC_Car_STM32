@@ -8,21 +8,24 @@
 #ifndef SRC_STATEMACHINE_H_
 #define SRC_STATEMACHINE_H_
 
+#include <string.h>
+#include "UartHelper.h"
+
 class StateMachine {
 public:
   StateMachine();
-
-  // TODO: Send the UartHelper object through copy assignment
-  // constructor to this class. This class will then manage the object that
-  // was initially created in main.cpp. This class wil then
-  // deal with the communication process
   void main();
   void establish_connection();
-  void send_update();
-  void block_car();
-  void wait_msg();
+  void sendUpdate();
+  void blockCar();
+  void waitMsg();
   void command_motors();
-  void read_sensors();
+  void readSensors();
+  void setUartHelper(UartHelper *);
+private:
+  UartHelper *_uart_helper;
+  uint8_t _data_tx_buffer[10];
+  uint8_t _data_rx_buffer[10];
 };
 
 #endif /* SRC_STATEMACHINE_H_ */

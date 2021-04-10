@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include "UartHelper.h"
+#include "StateMachine.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,6 +95,7 @@ uint32_t timeout;
 uint8_t *rx_b;
 
 UartHelper uart_helper;
+StateMachine state_machine;
 
 /* USER CODE END PV */
 
@@ -103,14 +105,17 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void init();
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);;
+}
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Deposit the received data in the uart object
   uart_helper.receive(main_rx_buff);
   // Normally, after a message is received, UART should be put in reception
   // mode again:
-  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
+  HAL_UART_Receive_IT(uart_helper.getHandler(), main_rx_buff, 8);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
@@ -155,6 +160,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   uart_helper.setHandler(&huart2);
+  state_machine.setUartHelper(&uart_helper);
   HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
   /* USER CODE END 2 */
   /* Infinite loop */
@@ -167,6 +173,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    state_machine.main();
   }
   /* USER CODE END 3 */
 }
