@@ -40,6 +40,9 @@ void UartHelper::receive(uint8_t rx[]) {
      for receiving UART data and the other one is always available for
      returning the stored data. */
 
+  /* Record the time of the current message */
+  _last_msg_time = HAL_GetTick();
+
   /* Only proceed with writing if the buffers have been swapped */
   if (swap_flag == BUFFER_READY) {
     /* Write UART data to the active (in-use) buffer */
@@ -158,3 +161,15 @@ void UartHelper::transmit(uint8_t *tx) {
   HAL_UART_Transmit_IT(huart, tx, 8);
 };
 
+uint32_t UartHelper::isConnectionActive() {
+  // TODO: Implement subtraction and comparison for active connection
+  time_diff = HAL_GetTick() - _last_msg_time;
+  if (time_diff > max_time_diff) {
+    max_time_diff = time_diff;
+  }
+  return time_diff < _timeout;
+}
+
+void UartHelper::setConnectionTimeout(uint32_t timeout) {
+  this -> _timeout = timeout;
+}

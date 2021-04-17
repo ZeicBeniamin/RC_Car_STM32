@@ -29,25 +29,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum
-{
-  STM_INITIALIZING_TIMER,
-  STM_SENDING_UPDATE,
-  STM_WAITING_MESSAGE,
-  STM_SENDING_COMMAND,
-  STM_CAR_BLOCKED,
-  STM_WAITING_MESSAGE_BLOCK
-} STM32_StateTypeDef;
 
-/**
-  * @brief STM32 Connection State definition
-  * @note  There are only two possible states: connection established or not established.
-  */
-typedef enum
-{
-  CONN_ESTABLISHED,
-  CONN_NOT_ESTABLISHED
-} STM32_ConnStateTypeDef;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/

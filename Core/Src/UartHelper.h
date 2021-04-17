@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
+#include <algorithm>
 
 typedef enum {
   BUFFER_REQUEST_SWAP,
@@ -30,6 +31,8 @@ public:
   uint8_t* read();
   void setHandler(UART_HandleTypeDef*);
   UART_HandleTypeDef* getHandler();
+  uint32_t isConnectionActive();
+  void setConnectionTimeout(uint32_t);
 
 private:
   // Write locations for the RXCpltCallback method - will be used alternatively
@@ -54,6 +57,15 @@ private:
   // TODO: Remove tests
   uint8_t rx[10];
   uint8_t *rx_b;
+
+  /* Stores the time moment of the last message */
+  uint32_t _last_msg_time = 0;
+  /* Stores timeout for the "no-message-received" situation */
+  uint32_t _timeout = 1000;
+
+  uint32_t time_diff;
+  uint32_t max_time_diff = 0;
+
 };
 
 #endif /* SRC_UARTHELPER_H_ */
