@@ -58,6 +58,9 @@ public:
   void readSensors();
   void setUartHelper(UartHelper *);
   void decode_message(uint8_t *);
+  void setTimHandler(TIM_HandleTypeDef *);
+  void setConnectionTimeout(uint32_t);
+
 private:
 
   // TODO: Remove after tests
@@ -66,6 +69,7 @@ private:
   /* Pointers to objects used in communication */
   UartHelper *_p_uart_helper;
   uint8_t *_p_message_rx;
+  TIM_HandleTypeDef *_htim;
 
   /* Store the commands to be given to the motors */
   int _motor_speed_percent;
@@ -83,6 +87,11 @@ private:
   /* Enums used as state variables */
   STM32_ConnStateTypeDef _connection;
   STM32_StateTypeDef _stm_state;
+
+  /* Stores maximum time period (in milliseconds) for which the car should run
+   * if no message is received.
+   */
+  uint32_t _timeout = 1000;
 
 
 };

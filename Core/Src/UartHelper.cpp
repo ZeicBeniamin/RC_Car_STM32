@@ -174,19 +174,15 @@ void UartHelper::transmit(uint8_t *tx) {
   HAL_UART_Transmit_IT(huart, tx, 8);
 };
 
-uint32_t UartHelper::isConnectionActive() {
+uint32_t UartHelper::getMessageTimeDiff() {
   // TODO: Implement subtraction and comparison for active connection
   time_diff = HAL_GetTick() - _last_msg_time;
   if (time_diff > max_time_diff) {
     max_time_diff = time_diff;
   }
-  return time_diff < _timeout;
+  return time_diff;
 }
 
 uint8_t UartHelper::isLastMessageProcessed() {
   return _last_msg_read;
-}
-
-void UartHelper::setConnectionTimeout(uint32_t timeout) {
-  this -> _timeout = timeout;
 }

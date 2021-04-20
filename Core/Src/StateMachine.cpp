@@ -13,8 +13,16 @@ StateMachine::StateMachine() {
   _msg_type = MSG_NO_MESSAGE;
 }
 
-void StateMachine::setUartHelper(UartHelper *uart_helper){
+void StateMachine::setTimHandler(TIM_HandleTypeDef *htim) {
+  this -> _htim = htim;
+}
+
+void StateMachine::setUartHelper(UartHelper *uart_helper) {
   _p_uart_helper = uart_helper;
+}
+
+void StateMachine::setConnectionTimeout(uint32_t timeout) {
+  this -> _timeout = timeout;
 }
 
 /** @brief  Decodes the message received through UART.
@@ -87,6 +95,14 @@ void StateMachine::main() {
 
   /* Connection not established */
   if (_connection == CONN_NOT_ESTABLISHED) {
+
+  // !!!!!!!!!!!!!!!!!!!!!! WARNING - BYPASS !!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+ // !!!!!!!!!!!!!!!!!!!!!! WARNING - BYPASS - END !!!!!!!!!!!!!!!!!!!!!
+
     /* Continuously send connection requests and check for the response */
     strcpy((char*) _data_tx_buffer, (char*) "<CONREQ>");
     _p_uart_helper->transmit(_data_tx_buffer);
@@ -119,9 +135,10 @@ void StateMachine::main() {
     if (! _p_uart_helper -> isLastMessageProcessed()) {
       led_state = !led_state;
       decode_message(_p_uart_helper->read());
+      __HAL_TIM_SET_COMPARE(_htim, TIM_CHANNEL_1, _servo_angle_percent);
       HAL_Delay(50);
     }
-    else if (! _p_uart_helper -> isConnectionActive()) {
+    else if (! (_p_uart_helper -> getMessageTimeDiff() < _timeout)) {
       led_state = 1;
       _stm_state = STM_BLOCKED;
     }

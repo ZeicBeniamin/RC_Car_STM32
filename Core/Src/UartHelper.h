@@ -31,9 +31,8 @@ public:
   uint8_t* read();
   void setHandler(UART_HandleTypeDef*);
   UART_HandleTypeDef* getHandler();
-  uint32_t isConnectionActive();
+  uint32_t getMessageTimeDiff();
   uint8_t isLastMessageProcessed();
-  void setConnectionTimeout(uint32_t);
 
 private:
   //  TODO: Refactor all private variables to the same type of name formatting, \
@@ -67,10 +66,7 @@ private:
 
   /* Stores the time moment of the last message */
   uint32_t _last_msg_time = 0;
-  /* Stores maximum time period (in milliseconds) for which the car should run
-   * if no message is received.
-   */
-  uint32_t _timeout = 1000;
+
   /* Remembers if last received message was read by another method or not */
   uint8_t _last_msg_read = 0;
 
