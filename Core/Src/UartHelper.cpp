@@ -18,6 +18,8 @@
   * @param  None
   * @retval None
   */
+
+// TODO: Document the class and its methods in a more appropriate and coherent way
 UartHelper::UartHelper() {
   // Assign the first buffer as the storage reading buffer
   rx_state = RX_BUFFER_READY;
@@ -43,6 +45,9 @@ void UartHelper::receive(uint8_t rx[]) {
   /* Record the time of the current message */
   _last_msg_time = HAL_GetTick();
 
+
+  //TODO: Repetitive code below. See if it can be written in a more compact\
+    form
   /* Only proceed with writing if the buffers have been swapped */
   if (swap_flag == BUFFER_READY) {
     /* Write UART data to the active (in-use) buffer */
@@ -52,8 +57,11 @@ void UartHelper::receive(uint8_t rx[]) {
       /* If no read operation is currently performed on the inactive buffer,
          swap the two buffers. Making the currently used buffer inactive, we
          give the chance for the received data to be read from that buffer without
-         interfering with data reception from UART. */
+         interfering with data reception, performed in this method. */
       if (rx_state == RX_BUFFER_READY) {
+        /* Change the active buffer, making the buffer we just wrote to
+         * available for reading.
+         */
         rx_buffer = rx_buffer2;
       }
       /* Otherwise, raise a flag so that the buffer is changed when reading
@@ -72,6 +80,8 @@ void UartHelper::receive(uint8_t rx[]) {
         swap_flag = BUFFER_REQUEST_SWAP;
       }
     }
+    /* Mark the message we just wrote as unread. */
+    _last_msg_read = 0;
   }
 
   return;
@@ -99,6 +109,9 @@ uint8_t* UartHelper::read() {
   /* Copy data from the available register - the one which is not currently used
      for writing rx data - to the read_buffer, which will be sent to the program
      via the method's return parameter. */
+
+  /* Mark the message as read. */
+  _last_msg_read = 1;
 
   /* Protect access to the buffer by flagging the reading operation with
      RX_BUFFER_BUSY_READING. */
@@ -168,6 +181,10 @@ uint32_t UartHelper::isConnectionActive() {
     max_time_diff = time_diff;
   }
   return time_diff < _timeout;
+}
+
+uint8_t UartHelper::isLastMessageProcessed() {
+  return _last_msg_read;
 }
 
 void UartHelper::setConnectionTimeout(uint32_t timeout) {

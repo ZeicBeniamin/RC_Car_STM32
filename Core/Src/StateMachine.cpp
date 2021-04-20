@@ -49,10 +49,10 @@ void StateMachine::decode_message(uint8_t *msg) {
    */
   else if (msg[1] == 'M' && msg[4] == 'S' &&
       isdigit(msg[2]) && isdigit(msg[3]) &&
-      isdigit(msg[4]) && isdigit(msg[5])) {
+      isdigit(msg[5]) && isdigit(msg[6])) {
     _msg_type = MSG_ACTUATORS_COMMAND;
-    _motor_speed_percent = msg[2] * 10 + msg[3];
-    _servo_angle_percent = msg[5] * 10 + msg[6];
+    _motor_speed_percent = (msg[2] - 48) * 10 + (msg[3] - 48);
+    _servo_angle_percent = (msg[5] - 48) * 10 + (msg[6] - 48);
   }
 }
 
@@ -101,11 +101,13 @@ void StateMachine::main() {
 
   /**
    *  If connection was established && stm running:
-   *  - check timestamp of last message
+   *  - check timestamp of last message - essentially checks if a new message was received
    *    (if different from that of last validly processed message:
-   *      - process message (this includes conversions and motor commands)
+   *      - process message (this includes actuator commands interpreting)
+   *      - send commands (call method that manages command sending
    *     else:
-   *      - calculate difference between last timestamp and current time
+   *      - calculate difference between last timestamp and current time - essentially checks if the connection is still active\
+   *                    i.e. if a message was received before timeout
    *        (if greater than timeout:
    *          - stop car
    *          )
@@ -114,14 +116,24 @@ void StateMachine::main() {
    */
 
   else if (_connection == CONN_ESTABLISHED && _stm_state == STM_RUNNING) {
-    if(_p_uart_helper->isConnectionActive()) {
+    if (! _p_uart_helper -> isLastMessageProcessed()) {
       led_state = !led_state;
-      HAL_Delay(100);
-    } else {
-      led_state = 1;
-      HAL_Delay(500);
-      _stm_state = STM_CAR_BLOCKED;
+      decode_message(_p_uart_helper->read());
+      HAL_Delay(50);
     }
+    else if (! _p_uart_helper -> isConnectionActive()) {
+      led_state = 1;
+      _stm_state = STM_BLOCKED;
+    }
+    // TODO: Remove code - used just for testing
+//    if(_p_uart_helper->isConnectionActive()) {
+//      led_state = !led_state;
+//      HAL_Delay(100);
+//    } else {
+//      led_state = 1;
+//      HAL_Delay(500);
+//      _stm_state = STM_CAR_BLOCKED;
+//    }
   }
 
   /** If connection was not established:
