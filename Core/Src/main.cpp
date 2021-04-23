@@ -82,6 +82,12 @@ uint8_t *rx_b;
 UartHelper uart_helper;
 StateMachine state_machine;
 
+// Test code
+uint32_t count = 0;
+
+uint8_t _servo_angle_percent;
+uint8_t _motor_speed_percent;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,13 +102,44 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
   HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);;
 }
 
+void testdecode_message(uint8_t *msg);
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Deposit the received data in the uart object
   uart_helper.receive(main_rx_buff);
   // Normally, after a message is received, UART should be put in reception
-  // mode again:
+//   mode again:
+
   HAL_UART_Receive_IT(uart_helper.getHandler(), main_rx_buff, 8);
 }
+
+/*void testdecode_message(uint8_t *msg) {
+    There are currently only two possible message types:
+   *  - connection accepted
+   *  - actuators command
+
+//  char msg[10];
+//
+//  strcpy(msg, (char*) mes);
+  uint8_t heading_pos = 0;
+  uint8_t i = 0;
+
+  while (i < 8) {
+        if ((msg[i]) == '<') {
+             Store heading byte position
+            heading_pos = i;
+             Exit loop
+            i = 8;
+        }
+        ++i;
+    }
+
+  if (msg[(heading_pos + 1)%8] == 'M' && msg[(heading_pos + 4)%8] == 'S') {
+
+    _motor_speed_percent = (msg[(heading_pos + 2)%8] - 48) * 10 + (msg[(heading_pos + 3)%8] - 48);
+    _servo_angle_percent = (msg[(heading_pos + 5)%8] - 48) * 10 + (msg[(heading_pos + 6)%8] - 48);
+  }
+}*/
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   // Do nothing
@@ -150,6 +187,7 @@ int main(void)
   uart_helper.setHandler(&huart2);
   state_machine.setUartHelper(&uart_helper);
   state_machine.setTimHandler(&htim3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
   /* USER CODE END 2 */
   /* Infinite loop */
@@ -162,6 +200,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
     state_machine.main();
   }
   /* USER CODE END 3 */
@@ -213,7 +252,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
@@ -235,6 +274,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
@@ -242,11 +282,20 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 160;
+  htim3.Init.Prescaler = 320;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 1000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
   {
     Error_Handler();
@@ -258,7 +307,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 75;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)

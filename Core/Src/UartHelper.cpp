@@ -136,8 +136,6 @@ uint8_t* UartHelper::read() {
     }
   }
 
-  /* Process the received string, in case it suffered circular permutations */
-
   /* UART works on 8 bytes */
   while (i < 8) {
       if ((char)(aux[i]) == '<') {

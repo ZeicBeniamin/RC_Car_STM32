@@ -11,6 +11,7 @@
 #include <string.h>
 #include "UartHelper.h"
 #include <cctype>
+#include <cstdio>
 
 typedef enum {
   MSG_NO_MESSAGE,
@@ -60,6 +61,8 @@ public:
   void decode_message(uint8_t *);
   void setTimHandler(TIM_HandleTypeDef *);
   void setConnectionTimeout(uint32_t);
+  void sendActuatorsCommand(uint8_t, uint8_t);
+  void stopActuators();
 
 private:
 
@@ -91,7 +94,7 @@ private:
   /* Stores maximum time period (in milliseconds) for which the car should run
    * if no message is received.
    */
-  uint32_t _timeout = 1000;
+  uint32_t _timeout = 10000;
 
 
 };
