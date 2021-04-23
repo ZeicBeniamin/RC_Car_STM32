@@ -24,29 +24,13 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include "UartHelper.h"
+#include "StateMachine.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum
-{
-  STM_INITIALIZING_TIMER,
-  STM_SENDING_UPDATE,
-  STM_WAITING_MESSAGE,
-  STM_SENDING_COMMAND,
-  STM_CAR_BLOCKED,
-  STM_WAITING_MESSAGE_BLOCK
-} STM32_StateTypeDef;
 
-/**
-  * @brief STM32 Connection State definition
-  * @note  There are only two possible states: connection established or not established.
-  */
-typedef enum
-{
-  CONN_ESTABLISHED,
-  CONN_NOT_ESTABLISHED
-} STM32_ConnStateTypeDef;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -66,6 +50,8 @@ typedef enum
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim3;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -97,6 +83,13 @@ uint32_t timeout;
 uint8_t *rx_b;
 
 UartHelper uart_helper;
+StateMachine state_machine;
+
+// Test code
+uint32_t count = 0;
+
+uint8_t _servo_angle_percent;
+uint8_t _motor_speed_percent;
 
 /* USER CODE END PV */
 
@@ -104,21 +97,53 @@ UartHelper uart_helper;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void init();
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);;
+}
+
+void testdecode_message(uint8_t *msg);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   // Deposit the received data in the uart object
   uart_helper.receive(main_rx_buff);
   // Normally, after a message is received, UART should be put in reception
-  // mode again:
-//  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
-//  led_state = !led_state;
-//  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, (led_state == 0 ? GPIO_PIN_RESET : GPIO_PIN_SET));
-   HAL_UART_Transmit_IT(&huart2, uart_helper.read(), 8);
+  //   mode again:
+
+  HAL_UART_Receive_IT(uart_helper.getHandler(), main_rx_buff, 8);
 
 }
+
+/*void testdecode_message(uint8_t *msg) {
+    There are currently only two possible message types:
+   *  - connection accepted
+   *  - actuators command
+
+//  char msg[10];
+//
+//  strcpy(msg, (char*) mes);
+  uint8_t heading_pos = 0;
+  uint8_t i = 0;
+
+  while (i < 8) {
+        if ((msg[i]) == '<') {
+             Store heading byte position
+            heading_pos = i;
+             Exit loop
+            i = 8;
+        }
+        ++i;
+    }
+
+  if (msg[(heading_pos + 1)%8] == 'M' && msg[(heading_pos + 4)%8] == 'S') {
+
+    _motor_speed_percent = (msg[(heading_pos + 2)%8] - 48) * 10 + (msg[(heading_pos + 3)%8] - 48);
+    _servo_angle_percent = (msg[(heading_pos + 5)%8] - 48) * 10 + (msg[(heading_pos + 6)%8] - 48);
+  }
+}*/
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   // Do nothing
@@ -160,17 +185,15 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
+
   /* USER CODE BEGIN 2 */
-  // Send the handler object together with the read buffer from main.
-  // This is required so that the buffer can be accessed both from UartHelper.cpp
-  // and main.cpp.
-  // main.cpp contains the callback that redirects the read data to UartHelper
-  // through this buffer. UartHelper uses this buffer as an argument for the
-  // HAL_UART_Receive_IT function, in order to be used as a storage buffer for
-  // the messages sent through uart.
-  uart_helper.setHandler(&huart2, main_rx_buff);
-  // No need to call HAL_UART_Receive_IT here, since it's called in the
-  // setHandler method, from class UartHelper.
+
+  uart_helper.setHandler(&huart2);
+  state_machine.setUartHelper(&uart_helper);
+  state_machine.setTimHandler(&htim3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_UART_Receive_IT(&huart2, main_rx_buff, 8);
 
   /* USER CODE END 2 */
   /* Infinite loop */
@@ -197,9 +220,28 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+    state_machine.main();
   }
   /* USER CODE END 3 */
 }
+
+/* USER CODE BEGIN 4 */
+
+/**
+  * @brief Initialize the state of the components of STM32
+  * @param None
+  * @retval None
+  */
+void init(void) {
+  led_state = 0;
+  // TODO: Initialize motors and servos to desired positions
+  connState = CONN_NOT_ESTABLISHED;
+  gState = STM_WAITING_MESSAGE;
+}
+
+/* USER CODE END 4 */
+
 
 /**
   * @brief System Clock Configuration
@@ -238,6 +280,65 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 320;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 1000;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 75;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
 }
 
 /**
@@ -284,6 +385,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
@@ -298,18 +400,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/**
-  * @brief Initialize the state of the components of STM32
-  * @param None
-  * @retval None
-  */
-void init(void) {
-  led_state = 0;
-  // TODO: Initialize motors and servos to desired positions
-  connState = CONN_NOT_ESTABLISHED;
-  gState = STM_WAITING_MESSAGE;
-}
 
 /* USER CODE END 4 */
 
@@ -346,3 +436,4 @@ void assert_failed(uint8_t *file, uint32_t line)
 #endif /* USE_FULL_ASSERT */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
