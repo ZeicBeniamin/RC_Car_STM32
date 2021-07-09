@@ -5,22 +5,26 @@
  *      Author: Beniamin Zeic
  */
 
-#define MOTOR_LOW_PWM 0
-#define MOTOR_HIGH_PWM 80
+#define MOTOR_LOW_PWM 30
+#define MOTOR_HIGH_PWM 60
 
 #include <motor.h>
 
 int pwm_duty = 0;
-TIM_HandleTypeDef *servoHtim;
+TIM_HandleTypeDef *motorHtim;
 
 void motorSetTimHandler(TIM_HandleTypeDef *h) {
-  servoHtim = h;
+  motorHtim = h;
 }
 
 
 void motorControl(uint8_t command) {
-  pwm_duty = map(command, 0, 99, MOTOR_LOW_PWM, MOTOR_HIGH_PWM);
-  __HAL_TIM_SET_COMPARE(servoHtim, TIM_CHANNEL_1, pwm_duty);
+  if (command != 0) {
+	  pwm_duty = map(command, 0, 99, MOTOR_LOW_PWM, MOTOR_HIGH_PWM);
+  } else {
+	  pwm_duty = 0;
+  }
+  __HAL_TIM_SET_COMPARE(motorHtim, TIM_CHANNEL_1, pwm_duty);
 
 }
 

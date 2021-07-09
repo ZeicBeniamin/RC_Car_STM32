@@ -33,7 +33,8 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <uart.h>
-
+#include <motor.h>
+#include <servo.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

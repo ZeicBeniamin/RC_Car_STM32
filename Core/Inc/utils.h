@@ -15,6 +15,7 @@ typedef enum {
 } Actuator;
 
 float map(float, float, float, float, float);
+float max(float, float);
 
 
 #endif /* INC_ENUMS_H_ */
